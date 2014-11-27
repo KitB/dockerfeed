@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
    Copyright 2014 n@work Internet Informationssysteme GmbH, Germany
 
@@ -79,6 +77,7 @@ class DockerContextGenerator(object):
                 tarfile.add(self.dockerfile, arcname='./Dockerfile')
         stringfile.seek(0)
         return stringfile.read()
+
 
 def main():
     parser = argparse.ArgumentParser(description='Replace Dockerfile and/or replace file path in context')
