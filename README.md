@@ -33,5 +33,6 @@ optional arguments:
                         replacement dockerfile
   -i DOCKERIGNORE, --dockerignore DOCKERIGNORE
                         A file containing glob rules for which files to
-                        exclude from the context.
+                        exclude from the context. .dockerignore will be used
+                        by default if it exists.
 ```

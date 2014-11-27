@@ -82,7 +82,8 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dockerfile', metavar='DOCKERFILE', type=str, dest='dockerfile', default=None,
                         action='store', help='replacement dockerfile')
     parser.add_argument('-i', '--dockerignore', default=None,
-                        help='A file containing glob rules for which files to exclude from the context.')
+                        help='A file containing glob rules for which files to exclude from the context. '
+                        '.dockerignore will be used by default if it exists.')
     parsed = parser.parse_args()
 
     filter_list = []
