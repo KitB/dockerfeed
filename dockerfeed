@@ -16,31 +16,59 @@
    limitations under the License.
 """
 
- 
-from tarfile import TarFile,TarInfo
+import argparse
+import fnmatch
+import os
+import sys
+from tarfile import TarFile
 from cStringIO import StringIO
-import os, sys, argparse
+
+
+class DockerIgnoreParser(object):
+    def __init__(self, ignore_string):
+        self.ignore_rules = [line for line in ignore_string.split('\n') if line]
+
+    def ignores(self, filename):
+        return any(fnmatch.fnmatchcase(filename, pattern) for pattern in self.ignore_rules)
+
+    @classmethod
+    def from_filename(cls, filename):
+        with open(filename, 'r') as f:
+            return cls(f.read())
+
+    @classmethod
+    def from_file_obj(cls, file_obj):
+        return cls(file_obj.read())
 
 
 class DockerContextGenerator(object):
-    def __init__(self, context, dockerfile, filter_list, replacement_list):
+    def __init__(self, context, dockerfile, filter_list, replacement_list, dockerignore):
         self.context = context
         self.filter_list = filter_list
         self.replacement_list = replacement_list
         self.dockerfile = dockerfile
+        self.dockerignore = dockerignore
 
     def filter_func(self, info):
-        if os.path.relpath(info.name) in filter_list:
+        path = os.path.relpath(info.name)
+        in_filter_list = path in filter_list
+
+        if self.dockerignore is not None:
+            ignored = self.dockerignore.ignores(path)
+        else:
+            ignored = False
+
+        if in_filter_list or ignored:
             return None
         else:
             return info
 
     def create_context(self):
         stringfile = StringIO()
-        with TarFile.open(mode='w',fileobj=stringfile) as tarfile:
+        with TarFile.open(mode='w', fileobj=stringfile) as tarfile:
             tarfile.add(self.context, arcname='.', filter=self.filter_func)
-            for src,dst in self.replacement_list:
-                tarfile.add(os.path.join(src,dst),arcname=os.path.join('.',dst))
+            for src, dst in self.replacement_list:
+                tarfile.add(os.path.join(src, dst), arcname=os.path.join('.', dst))
             if self.dockerfile:
                 tarfile.add(self.dockerfile, arcname='./Dockerfile')
         stringfile.seek(0)
@@ -53,27 +81,40 @@ if __name__ == '__main__':
                         default=[], help='path to add/override in context. example: /path/to/./path_to_be_inserted')
     parser.add_argument('-d', '--dockerfile', metavar='DOCKERFILE', type=str, dest='dockerfile', default=None,
                         action='store', help='replacement dockerfile')
+    parser.add_argument('-i', '--dockerignore', default=None,
+                        help='A file containing glob rules for which files to exclude from the context.')
     parsed = parser.parse_args()
 
     filter_list = []
     replacement_list = []
     dockerfile = None
 
-    if parsed.dockerfile:
+    if parsed.dockerfile is not None:
         filter_list.append('Dockerfile')
         dockerfile = parsed.dockerfile
         if not os.path.isfile(dockerfile):
-            parser.error('Dockerfile is expected to be a plain file') 
+            parser.error('DOCKERFILE is expected to be a plain file')
+
+    if parsed.dockerignore is not None:
+        if not os.path.isfile(parsed.dockerignore):
+            parser.error('DOCKERIGNORE must be a file')
+        dockerignore = DockerIgnoreParser.from_filename(parsed.dockerignore)
+    else:
+        if os.path.isfile('.dockerignore'):
+            dockerignore = DockerIgnoreParser.from_filename('.dockerignore')
+        else:
+            dockerignore = None
+
     for path in parsed.paths:
         try:
-            (source,dest) = path.split('/./')
+            (source, dest) = path.split('/./')
         except:
             parser.error('wrong path syntax')
         filter_list.append(os.path.relpath(dest))
-        replacement_list.append((source,dest))
-    dcg = DockerContextGenerator(os.path.relpath(parsed.context), dockerfile, filter_list, replacement_list)
-    dcg.create_context()
-
-
-
-
+        replacement_list.append((source, dest))
+    dcg = DockerContextGenerator(os.path.relpath(parsed.context),
+                                 dockerfile,
+                                 filter_list,
+                                 replacement_list,
+                                 dockerignore)
+    tarstring = dcg.create_context()
