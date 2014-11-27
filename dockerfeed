@@ -26,7 +26,13 @@ from cStringIO import StringIO
 
 class DockerIgnoreParser(object):
     def __init__(self, ignore_string):
-        self.ignore_rules = [line for line in ignore_string.split('\n') if line]
+        self.ignore_rules = [self._mangle(line) for line in ignore_string.split('\n') if line]
+
+    def _mangle(self, line):
+        if line.endswith('/'):
+            # Everything gets passed through os.path.relpath which *strips* trailing slashes
+            line = line[:-1]
+        return line
 
     def ignores(self, filename):
         return any(fnmatch.fnmatchcase(filename, pattern) for pattern in self.ignore_rules)
