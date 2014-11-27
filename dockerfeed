@@ -57,7 +57,7 @@ class DockerContextGenerator(object):
 
     def filter_func(self, info):
         path = os.path.relpath(info.name)
-        in_filter_list = path in filter_list
+        in_filter_list = path in self.filter_list
 
         if self.dockerignore is not None:
             ignored = self.dockerignore.ignores(path)
