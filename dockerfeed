@@ -78,9 +78,9 @@ class DockerContextGenerator(object):
             if self.dockerfile:
                 tarfile.add(self.dockerfile, arcname='./Dockerfile')
         stringfile.seek(0)
-        sys.stdout.write(stringfile.read())
+        return stringfile.read()
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Replace Dockerfile and/or replace file path in context')
     parser.add_argument('context', type=str, action='store', help='path to context')
     parser.add_argument('-p', '--path', metavar='PATH', type=str, dest='paths', action='append',
@@ -124,4 +124,8 @@ if __name__ == '__main__':
                                  filter_list,
                                  replacement_list,
                                  dockerignore)
-    dcg.create_context()
+    tarstring = dcg.create_context()
+    sys.stdout.write(tarstring)
+
+if __name__ == '__main__':
+    main()
