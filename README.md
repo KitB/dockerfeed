@@ -18,7 +18,7 @@ dockerfeed -d ../Dockerfile.special path/to/dockerimagesource | docker build -t 
 The `-p` option will allow to add extra content to the build context. 
 
 ```
-usage: dockerfeed [-h] [-p PATH] [-d DOCKERFILE] context
+usage: dockerfeed [-h] [-p PATH] [-d DOCKERFILE] [-i DOCKERIGNORE] context
 
 Replace Dockerfile and/or replace file path in context
 
@@ -31,4 +31,7 @@ optional arguments:
                         /path/to/./path_to_be_inserted
   -d DOCKERFILE, --dockerfile DOCKERFILE
                         replacement dockerfile
-  ```
+  -i DOCKERIGNORE, --dockerignore DOCKERIGNORE
+                        A file containing glob rules for which files to
+                        exclude from the context.
+```
